@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Zeev V3 — Portrait size check</title><style>body{background:#142e4d;color:white;font:16px system-ui;padding:20px}</style></head><body><p id="status">Loading approved Zeev V3 artwork…</p>
+<script>
+(async () => {
+ const rules = [
+ ['.hero img{width:min(100%,340px);height:320px;object-fit:contain}', '.hero #hero{width:min(100%,340px);height:320px;object-fit:contain}'],
+ ['.bubble{height:52px;width:52px;border:2px solid #55b9f3;border-radius:50%;overflow:hidden;margin:10px auto;background:#183454}.bubble img{height:52px;width:52px;object-fit:cover;object-position:35% 26%;transform:scale(2.25)}', '.portrait-sizes{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:14px;margin:12px 0}.portrait-sample{display:flex;flex-direction:column;align-items:center;gap:5px;color:#bad2ed;font-size:12px}.bubble{position:relative;height:var(--size);width:var(--size);border:2px solid #55b9f3;border-radius:50%;overflow:hidden;background:#183454}.bubble .portrait{position:absolute;max-width:none;width:188.235294%;height:188.235294%;left:-23.529412%;top:-7.352941%;object-fit:fill;display:block;transform:none}'],
+ ['.hero img{height:270px}', '.hero #hero{height:270px}'],
+ ['<div>48px face portrait:</div><div class="bubble"><img id="mini" alt="Small Zeev portrait"></div>', '<div>Face portrait — size check:</div><div class="portrait-sizes">'+[32,48,64,96].map(s=>`<div class="portrait-sample"><div class="bubble" style="--size:${s}px"><img class="portrait" alt="Zeev ${s}px portrait"></div><span>${s}px</span></div>`).join('')+'</div>'],
+ ["document.getElementById('mini').src=assets[key];", "document.querySelectorAll('.portrait').forEach(img=>img.src=assets[key]);"]
+ ];
+ try {
+  const response=await fetch('./index.html',{cache:'no-store'});
+  if(!response.ok)throw new Error('Original lab could not be loaded: '+response.status);
+  const original=await response.text();let updated=original;
+  for(const [before,after] of rules){if(updated.split(before).length!==2)throw new Error('Original lab has changed. Portrait patch not applied.');updated=updated.replace(before,after);}
+  const images=s=>s.match(/data:image\/webp;base64,[A-Za-z0-9+/=]+/g)||[];
+  const oldImages=images(original),newImages=images(updated);
+  if(oldImages.length!==18||new Set(oldImages).size!==9||newImages.length!==oldImages.length||oldImages.some((v,i)=>v!==newImages[i]))throw new Error('Artwork integrity check failed.');
+  document.open();document.write(updated);document.close();
+  const download=document.createElement('button');download.textContent='Save corrected index.html';download.style.marginTop='20px';
+  download.onclick=()=>{const url=URL.createObjectURL(new Blob([updated],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='index.html';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+  document.querySelector('main').append(download);
+ }catch(e){const status=document.getElementById('status');if(status)status.textContent=e.message;else{const p=document.createElement('p');p.textContent=e.message;document.body.append(p);}}
+})();
+</script></body></html>
